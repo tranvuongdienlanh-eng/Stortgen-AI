@@ -1,0 +1,5 @@
+{
+  "name": "StoryGen AI",
+  "description": "An intelligent story generation app that creates stories in various genres (including accurate historical accounts using Google Search), exports to Word/PDF, and converts stories into dual-narrator podcasts.",
+  "requestFramePermissions": []
+}
