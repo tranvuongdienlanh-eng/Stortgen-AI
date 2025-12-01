@@ -31,3 +31,10 @@ export const LANGUAGES = [
   { value: 'Hindi', label: 'हिन्दी (Hindi)' },
   { value: 'Arabic', label: 'العربية (Arabic)' },
 ];
+
+export const AVAILABLE_MODELS = [
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Fast & Efficient)' },
+  { value: 'gemini-2.5-flash-lite-preview', label: 'Gemini 2.5 Flash Lite (Cost Effective)' },
+  { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+  { value: 'gemini-2.0-pro-exp-02-05', label: 'Gemini 2.0 Pro (High Intelligence)' },
+];

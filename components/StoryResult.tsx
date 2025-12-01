@@ -7,9 +7,11 @@ import { decodeBase64, decodeAudioData, audioBufferToWav } from '../services/aud
 interface StoryResultProps {
   result: GeneratedStoryResult;
   onReset: () => void;
+  apiKey: string;
+  modelId: string;
 }
 
-const StoryResult: React.FC<StoryResultProps> = ({ result, onReset }) => {
+const StoryResult: React.FC<StoryResultProps> = ({ result, onReset, apiKey, modelId }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [generatedAudioBuffer, setGeneratedAudioBuffer] = useState<AudioBuffer | null>(null);
@@ -56,6 +58,11 @@ const StoryResult: React.FC<StoryResultProps> = ({ result, onReset }) => {
   };
 
   const handlePlayPodcast = async () => {
+    if (!apiKey) {
+      alert("Please add an API Key in settings to generate audio.");
+      return;
+    }
+
     if (isPlaying) {
       if (sourceNodeRef.current) {
         sourceNodeRef.current.stop();
@@ -81,13 +88,14 @@ const StoryResult: React.FC<StoryResultProps> = ({ result, onReset }) => {
       try {
         const base64Audio = await generatePodcastAudio(
           `${result.title}\n\n${result.content}`, 
-          result.podcastDurationMinutes || 3
+          result.podcastDurationMinutes || 3,
+          apiKey
         );
         const byteArray = decodeBase64(base64Audio);
         audioBuffer = await decodeAudioData(byteArray, ctx, 24000, 1);
         setGeneratedAudioBuffer(audioBuffer);
       } catch (error) {
-        alert("Failed to generate audio. Please try again.");
+        alert("Failed to generate audio. Please check your API Key and try again.");
         console.error(error);
         setIsAudioLoading(false);
         return;
@@ -122,13 +130,18 @@ const StoryResult: React.FC<StoryResultProps> = ({ result, onReset }) => {
   };
 
   const handleGeneratePrompts = async () => {
+    if (!apiKey) {
+      alert("Please add an API Key in settings to generate prompts.");
+      return;
+    }
+
     setIsVideoPromptsLoading(true);
     try {
-      const prompts = await generateVideoPrompts(result.content);
+      const prompts = await generateVideoPrompts(result.content, apiKey, modelId);
       setVideoPrompts(prompts);
     } catch (error) {
       console.error(error);
-      alert("Failed to generate video prompts.");
+      alert("Failed to generate video prompts. Please check your API Key.");
     } finally {
       setIsVideoPromptsLoading(false);
     }

@@ -1,15 +1,18 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { StoryConfig, Genre, GeneratedStoryResult, GroundingSource } from "../types";
 
-const createAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+const createAI = (apiKey: string) => new GoogleGenAI({ apiKey });
 
-export const generateStory = async (config: StoryConfig): Promise<GeneratedStoryResult> => {
-  const ai = createAI();
+export const generateStory = async (config: StoryConfig, apiKey: string, modelId: string): Promise<GeneratedStoryResult> => {
+  if (!apiKey) throw new Error("API Key is missing");
+
+  const ai = createAI(apiKey);
   
-  // Choose model based on complexity. History requires search grounding and high accuracy.
+  // History genre might benefit from a smarter model if the user selected a basic one, 
+  // but we respect the user's choice mostly unless they are on a very old model.
+  // For now, we use the user selected modelId.
+  
   const isHistory = config.genre === Genre.HISTORY;
-  const modelName = isHistory ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
-
   const languageStr = config.languages.join(', ');
   
   let systemInstruction = `You are an expert story writer. 
@@ -38,12 +41,12 @@ export const generateStory = async (config: StoryConfig): Promise<GeneratedStory
 
   try {
     const response = await ai.models.generateContent({
-      model: modelName,
+      model: modelId, // Use user selected model
       contents: config.prompt,
       config: {
         systemInstruction: systemInstruction,
         tools: tools,
-        thinkingConfig: isHistory ? { thinkingBudget: 2048 } : undefined, // Add some thinking for history
+        thinkingConfig: isHistory && modelId.includes('pro') ? { thinkingBudget: 2048 } : undefined, // Only use thinking if on a pro model that supports it
       },
     });
 
@@ -90,11 +93,10 @@ export const generateStory = async (config: StoryConfig): Promise<GeneratedStory
 
 /**
  * Generates a dual-speaker podcast audio.
- * First, it rewrites the story into a script format.
- * Then, it sends the script to the TTS model.
  */
-export const generatePodcastAudio = async (storyText: string, durationMinutes: number): Promise<string> => {
-  const ai = createAI();
+export const generatePodcastAudio = async (storyText: string, durationMinutes: number, apiKey: string): Promise<string> => {
+  if (!apiKey) throw new Error("API Key is missing");
+  const ai = createAI(apiKey);
   
   // Estimate word count: avg speaking rate ~140 words/min
   const targetWordCount = Math.max(100, durationMinutes * 140);
@@ -120,6 +122,7 @@ export const generatePodcastAudio = async (storyText: string, durationMinutes: n
   ${storyText.substring(0, 15000)} 
   `; 
 
+  // We use flash for script generation to be fast
   const scriptResponse = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
     contents: scriptPrompt,
@@ -130,7 +133,7 @@ export const generatePodcastAudio = async (storyText: string, durationMinutes: n
   // Step 2: Generate Audio using the script
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-preview-tts',
+      model: 'gemini-2.5-flash-preview-tts', // Fixed model for TTS
       contents: [{ parts: [{ text: script }] }],
       config: {
         responseModalities: [Modality.AUDIO],
@@ -164,10 +167,12 @@ export const generatePodcastAudio = async (storyText: string, durationMinutes: n
 /**
  * Generates video prompts based on the story.
  */
-export const generateVideoPrompts = async (storyText: string): Promise<string> => {
-  const ai = createAI();
+export const generateVideoPrompts = async (storyText: string, apiKey: string, modelId: string): Promise<string> => {
+  if (!apiKey) throw new Error("API Key is missing");
+  const ai = createAI(apiKey);
+  
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: modelId,
     contents: `
       Analyze the following story and create a list of detailed, cinematic image generation prompts that could be used to create a video slideshow or storyboard for this story.
       

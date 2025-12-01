@@ -12,6 +12,11 @@ export enum Perspective {
   THIRD_PERSON = 'Third Person (Tác giả/Ngôi thứ 3)',
 }
 
+export interface AppSettings {
+  apiKeys: string[];
+  selectedModel: string;
+}
+
 export interface StoryConfig {
   prompt: string;
   languages: string[];
@@ -19,6 +24,9 @@ export interface StoryConfig {
   perspective: Perspective;
   characterCount: number;
   podcastDurationMinutes: number;
+  // Dynamic settings passed from App
+  apiKey?: string;
+  modelId?: string;
 }
 
 export interface GroundingSource {
